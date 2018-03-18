@@ -17,8 +17,8 @@ Shogi ( 将棋 ): Japanese Chess core library
 
     <dependencies>
         <dependency>
-            <groupId>shogicore</groupId>
-            <artifactId>shogicore</artifactId>
+            <groupId>shogi-core</groupId>
+            <artifactId>shogi-core</artifactId>
             <version>0.1</version>
         </dependency>
     </dependencies>
