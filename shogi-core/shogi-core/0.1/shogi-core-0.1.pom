@@ -69,8 +69,8 @@
 									<outputDirectory>${project.build.directory}/mvn-repo</outputDirectory>
 									<branch>refs/heads/mvn-repo</branch>
 									<includes><include>**/*</include></includes>
-									<repositoryName>${repositoryName}</repositoryName>
-									<repositoryOwner>${ownerName}</repositoryOwner>
+									<repositoryName>shogicore</repositoryName>
+									<repositoryOwner>cive</repositoryOwner>
 							</configuration>
 							<executions>
 									<execution>
