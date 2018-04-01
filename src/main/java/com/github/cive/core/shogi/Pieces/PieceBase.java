@@ -10,9 +10,10 @@ import java.util.Set;
 import java.util.Optional;
 
 public abstract class PieceBase implements Constant, Cloneable{
-    private Point point_for_gui;
+    public Point position;
     public PieceBase(Point position) {
-        this.setPosition(position);
+        // set_potision
+        this.position = position;
     }
     public String getName() {
         return "　";
@@ -27,10 +28,11 @@ public abstract class PieceBase implements Constant, Cloneable{
 
     /**
      *
-     * @param p GUI で表示するための位置
+     * @param point_for_gui GUI で表示するための位置
      */
-    public void setPoint(Point p) {
-        this.point_for_gui = p;
+    public void setPoint(Point point_for_gui) {
+        this.position.x = 9 - point_for_gui.x;
+        this.position.y = point_for_gui.y + 1;
     }
 
     /**
@@ -38,27 +40,26 @@ public abstract class PieceBase implements Constant, Cloneable{
      * @return GUI で表示するための位置
      */
     public Point getPoint() {
-        return point_for_gui;
+        return new Point(9 - position.x, position.y + 1);
     }
     /**
      * @return 盤台上の位置
      */
     public Point getPosition() {
-        return new Point(9-point_for_gui.x, point_for_gui.y+1);
+        return position;
     }
     /**
      * @param position 盤台上の位置
      * */
     public void setPosition(Point position)
     {
-        this.point_for_gui.x = position.x - 9;
-        this.point_for_gui.y = position.y + 1;
+        this.position = position;
     }
 
     @Override
     public PieceBase clone() throws CloneNotSupportedException {
         PieceBase c = (PieceBase)super.clone();
-        c.point_for_gui = new Point(point_for_gui);
+        c.position = new Point(position);
         return c;
     }
     public abstract Set<Point> getRuleOfPiece(int player_type);
@@ -137,13 +138,10 @@ public abstract class PieceBase implements Constant, Cloneable{
      * @return 盤上にある場合 TRUE を返す
      */
     public Boolean isOnBoard() {
-        return 0 <= point_for_gui.x && point_for_gui.x <= 8;
+        return 1 <= position.x && position.x <= 9;
     }
     @Override
     public String toString() {
         return getName() + getPoint().toString();
-    }
-    public Boolean isEmpty() {
-        return this.getTypeOfPiece() == PieceBase.NONE;
     }
 }
