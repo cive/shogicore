@@ -10,7 +10,7 @@ import java.util.Set;
 import java.util.Optional;
 
 public abstract class PieceBase implements Constant, Cloneable{
-    public Point position;
+    private Point position;
     public PieceBase(Point position) {
         // set_potision
         this.position = position;
@@ -106,8 +106,7 @@ public abstract class PieceBase implements Constant, Cloneable{
      * @return 成り駒を取得
      */
     public final Optional<PieceBase> getPromotePiece() {
-        PieceFactory factory = new PieceFactory();
-        return factory.createPromoted(getTypeOfPiece(), getPosition());
+        return PieceFactory.createPromoted(getTypeOfPiece(), getPosition());
     }
 
     /**
@@ -115,8 +114,7 @@ public abstract class PieceBase implements Constant, Cloneable{
      * @return 成り駒の元の駒
      */
     public final Optional<PieceBase> getDemotePiece() {
-        PieceFactory factory = new PieceFactory();
-        return factory.createDemoted(getTypeOfPiece(), getPoint());
+        return PieceFactory.createDemoted(getTypeOfPiece(), getPoint());
     }
 
     /**
