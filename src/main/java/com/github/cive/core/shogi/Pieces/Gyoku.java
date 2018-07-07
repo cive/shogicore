@@ -1,5 +1,7 @@
 package com.github.cive.core.shogi.Pieces;
 
+import com.github.cive.core.shogi.Players.PlayerBase;
+
 import java.awt.*;
 import java.util.HashSet;
 import java.util.Set;
@@ -24,7 +26,7 @@ public class Gyoku extends PieceBase {
     }
 
     @Override
-    public Set<Point> getRuleOfPiece(int player_type) {
+    public Set<Point> getRuleOfPiece(PlayerBase.PlayerType player_type) {
         Set<Point> set = new HashSet<>();
         for(int i = -1; i < 2; i++) {
             for(int j = -1; j < 2; j++) {
@@ -36,6 +38,11 @@ public class Gyoku extends PieceBase {
     }
     @Override
     public Integer getTypeOfPiece() {
+        return PieceBase.GYOKU;
+    }
+    @Override
+    public Integer getBacksideType()
+    {
         return PieceBase.GYOKU;
     }
 }

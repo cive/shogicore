@@ -25,11 +25,11 @@ public class Ryu extends Hisha {
     }
 
     @Override
-    public Set<Point> getRuleOfPiece(int player_type) {
+    public Set<Point> getRuleOfPiece(PlayerBase.PlayerType player_type) {
         // dammy
         Set<Point> set = new HashSet<>();
-        PieceBase hisha = new Hisha(this.getPoint());
-        PieceBase gyoku = new Gyoku(this.getPoint());
+        PieceBase hisha = new Hisha(this.getPosition());
+        PieceBase gyoku = new Gyoku(this.getPosition());
         set.addAll(hisha.getRuleOfPiece(player_type));
         set.addAll(gyoku.getRuleOfPiece(player_type));
 
@@ -40,14 +40,18 @@ public class Ryu extends Hisha {
         return PieceBase.RYU;
     }
     @Override
-    public Set<Point> getCapablePutPoint(PlayerBase attacker, PlayerBase defender) {
+    public Set<Point> getCapablePutPosition(PlayerBase attacker, PlayerBase defender) {
         Set<Point> set = new HashSet<>();
-        set.addAll(getSetToNeedToAdd(attacker, defender, true, 1, this.getPoint()));
-        set.addAll(getSetToNeedToAdd(attacker, defender, false, 1, this.getPoint()));
-        set.addAll(getSetToNeedToAdd(attacker, defender, true, -1, this.getPoint()));
-        set.addAll(getSetToNeedToAdd(attacker, defender, false, -1, this.getPoint()));
-        set.addAll((new Gyoku(this.getPoint()).getCapablePutPoint(attacker, defender)));
+        set.addAll(getSetToNeedToAdd(attacker, defender, true, 1, this.getPosition()));
+        set.addAll(getSetToNeedToAdd(attacker, defender, false, 1, this.getPosition()));
+        set.addAll(getSetToNeedToAdd(attacker, defender, true, -1, this.getPosition()));
+        set.addAll(getSetToNeedToAdd(attacker, defender, false, -1, this.getPosition()));
+        set.addAll((new Gyoku(this.getPosition()).getCapablePutPosition(attacker, defender)));
         return set;
     }
 
+    @Override
+    public Integer getBacksideType() {
+        return PieceBase.HISHA;
+    }
 }

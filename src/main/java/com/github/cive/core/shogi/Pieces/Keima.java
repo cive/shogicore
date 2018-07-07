@@ -25,9 +25,9 @@ public class Keima extends PieceBase {
     }
 
     @Override
-    public Set<Point> getRuleOfPiece(int player_type) {
+    public Set<Point> getRuleOfPiece(PlayerBase.PlayerType player_type) {
         Set<Point> set = new HashSet<>();
-        if(player_type == PlayerBase.AHEAD) {
+        if(player_type == PlayerBase.PlayerType.Ahead) {
             set.add(new Point(-1, -2));
             set.add(new Point(1, -2));
         } else {
@@ -39,5 +39,10 @@ public class Keima extends PieceBase {
     @Override
     public Integer getTypeOfPiece() {
         return PieceBase.KEIMA;
+    }
+
+    @Override
+    public Integer getBacksideType() {
+        return PieceBase.NARIKEI;
     }
 }

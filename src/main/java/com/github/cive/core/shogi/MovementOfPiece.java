@@ -2,6 +2,7 @@ package com.github.cive.core.shogi;
 
 import com.github.cive.core.shogi.Pieces.PieceBase;
 import com.github.cive.core.shogi.Pieces.PieceFactory;
+import org.apache.commons.codec.binary.Hex;
 
 import java.util.Optional;
 
@@ -11,9 +12,9 @@ import java.util.Optional;
  */
 public class MovementOfPiece {
     public MovementOfPiece(Optional<PieceBase> src, Optional<PieceBase> dst, String HexHash) {
-        setDst(dst);
-        setSrc(src);
-        setHexHash(HexHash);
+        this.dst = dst;
+        this.src = src;
+        this.HexHash = HexHash;
     }
     private Optional<PieceBase> src;
     private Optional<PieceBase> dst;
@@ -26,7 +27,7 @@ public class MovementOfPiece {
     public void setDst(Optional<PieceBase> dst)
     {
         this.dst = dst.isPresent() ?
-                PieceFactory.create(dst.get().getTypeOfPiece(), dst.get().getPoint()) :
+                PieceFactory.create(dst.get().getTypeOfPiece(), dst.get().getPosition()) :
                 Optional.empty();
     }
     /**
@@ -36,7 +37,7 @@ public class MovementOfPiece {
     public void setSrc(Optional<PieceBase> src)
     {
         this.src = src.isPresent() ?
-                PieceFactory.create(src.get().getTypeOfPiece(), src.get().getPoint()) :
+                PieceFactory.create(src.get().getTypeOfPiece(), src.get().getPosition()) :
                 Optional.empty();
     }
 
@@ -56,7 +57,7 @@ public class MovementOfPiece {
     public Optional<PieceBase> getDst()
     {
         Optional<PieceBase> dst = this.dst.isPresent() ?
-                PieceFactory.create(this.dst.get().getTypeOfPiece(), this.dst.get().getPoint()) :
+                PieceFactory.create(this.dst.get().getTypeOfPiece(), this.dst.get().getPosition()) :
                 Optional.empty();
         return dst;
     }
@@ -67,7 +68,7 @@ public class MovementOfPiece {
     public Optional<PieceBase> getSrc()
     {
         Optional<PieceBase> src = this.src.isPresent() ?
-                PieceFactory.create(this.src.get().getTypeOfPiece(), this.src.get().getPoint()) :
+                PieceFactory.create(this.src.get().getTypeOfPiece(), this.src.get().getPosition()) :
                 Optional.empty();
         return src;
     }
