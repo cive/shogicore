@@ -133,7 +133,6 @@ public class Kifu {
             while (movementOfPieceList.size() > num) {
                 movementOfPieceList.remove(num);
                 kifuList.remove(num);
-                hashList.remove(num);
             }
         }
         try {
@@ -210,6 +209,10 @@ public class Kifu {
             str += dst.get().getPosition().x + getChineseNum(dst.get().getPosition().y);
         }
         str += dst.get().getName();
+        if (!src.isPresent())
+        {
+            return str;
+        }
         int src_type = src.get().getTypeOfPiece();
         /**
          * おける場所が重ならない駒は
@@ -220,14 +223,14 @@ public class Kifu {
         if (src_type == PieceBase.KEIMA) {
             attacker.getPiecesOnBoard(src_type).forEach(x -> System.out.println(x.getPosition()));
             Optional<PieceBase> keima = Optional.ofNullable(attacker.getPiecesOnBoard(src_type)
-                    .filter(x -> x.getCapablePutPoint(attacker, defender).contains(dst.get().getPoint()))
-                    .filter(x -> !x.getPoint().equals(src.get().getPoint()))
+                    .filter(x -> x.getCapablePutPosition(attacker, defender).contains(dst.get().getPosition()))
+                    .filter(x -> !x.getPosition().equals(src.get().getPosition()))
                     .findFirst()
                     .orElse(null));
-            if (keima.isPresent())
+            if (! keima.isPresent())
             {
                 str += "";
-            } else if ((src.get().getPoint().x - keima.get().getPoint().x) * trans > 0) {
+            } else if ((src.get().getPosition().x - keima.get().getPosition().x) * trans > 0) {
                 str += "右";
             } else {
                 str += "左";
@@ -237,22 +240,22 @@ public class Kifu {
             List<PieceBase> gins = new ArrayList<>(
                     Arrays.asList(
                             attacker.getPiecesOnBoard(src_type)
-                                    .filter(x -> x.getCapablePutPoint(attacker, defender) == dst.get().getPoint())
-                                    .filter(x -> !x.getPoint().equals(src.get().getPoint()))
+                                    .filter(x -> x.getCapablePutPosition(attacker, defender) == dst.get().getPosition())
+                                    .filter(x -> !x.getPosition().equals(src.get().getPosition()))
                                     .toArray(PieceBase[]::new)
                     )
             );
-            boolean there_were_gin_on_col = gins.stream().anyMatch(g -> g.getPoint().y - src.get().getPoint().y == 0);
-            boolean top = dst.get().getPoint().x - src.get().getPoint().x == 0
-                    && (dst.get().getPoint().y - src.get().getPoint().y) * trans == 1;
-            boolean right_top = (dst.get().getPoint().x - src.get().getPoint().x) * trans == 1
-                    && (dst.get().getPoint().y - src.get().getPoint().y) * trans == 1;
-            boolean left_top = (dst.get().getPoint().x - src.get().getPoint().x) * trans == -1
-                    && (dst.get().getPoint().y - src.get().getPoint().y) * trans == 1;
-            boolean right_bottom = (dst.get().getPoint().x - src.get().getPoint().x) * trans == 1
-                    && (dst.get().getPoint().y - src.get().getPoint().y) * trans == -1;
-            boolean left_bottom = (dst.get().getPoint().x - src.get().getPoint().x) * trans == -1
-                    && (dst.get().getPoint().y - src.get().getPoint().y) * trans == 1;
+            boolean there_were_gin_on_col = gins.stream().anyMatch(g -> g.getPosition().y - src.get().getPosition().y == 0);
+            boolean top = dst.get().getPosition().x - src.get().getPosition().x == 0
+                    && (dst.get().getPosition().y - src.get().getPosition().y) * trans == 1;
+            boolean right_top = (dst.get().getPosition().x - src.get().getPosition().x) * trans == 1
+                    && (dst.get().getPosition().y - src.get().getPosition().y) * trans == 1;
+            boolean left_top = (dst.get().getPosition().x - src.get().getPosition().x) * trans == -1
+                    && (dst.get().getPosition().y - src.get().getPosition().y) * trans == 1;
+            boolean right_bottom = (dst.get().getPosition().x - src.get().getPosition().x) * trans == 1
+                    && (dst.get().getPosition().y - src.get().getPosition().y) * trans == -1;
+            boolean left_bottom = (dst.get().getPosition().x - src.get().getPosition().x) * trans == -1
+                    && (dst.get().getPosition().y - src.get().getPosition().y) * trans == 1;
             if (gins.stream().count() == 0) {
                 str += "";
             } else if (top) {
@@ -260,25 +263,25 @@ public class Kifu {
                 else str += "上";
             } else if (right_top) {
                 boolean there_were_gin_in_front_of =
-                        gins.stream().anyMatch(g -> (g.getPoint().y - src.get().getPoint().y) * trans == 2);
+                        gins.stream().anyMatch(g -> (g.getPosition().y - src.get().getPosition().y) * trans == 2);
                 if (!there_were_gin_on_col) str += "上";
                 else if (there_were_gin_in_front_of) str += "左上";
                 else str += "左";
             } else if (left_top) {
                 boolean there_were_gin_in_front_of =
-                        gins.stream().anyMatch(g -> (g.getPoint().y - src.get().getPoint().y) * trans == 2);
+                        gins.stream().anyMatch(g -> (g.getPosition().y - src.get().getPosition().y) * trans == 2);
                 if (!there_were_gin_on_col) str += "上";
                 else if (there_were_gin_in_front_of) str += "右上";
                 else str += "右";
             } else if (right_bottom) {
                 boolean there_were_gin_behind =
-                        gins.stream().anyMatch(g -> (g.getPoint().y - src.get().getPoint().y) * trans == -2);
+                        gins.stream().anyMatch(g -> (g.getPosition().y - src.get().getPosition().y) * trans == -2);
                 if (!there_were_gin_on_col) str += "引";
                 else if (there_were_gin_behind) str += "左引";
                 else str += "左";
             } else if (left_bottom) {
                 boolean there_were_gin_behind =
-                        gins.stream().anyMatch(g -> (g.getPoint().y - src.get().getPoint().y) * trans == -2);
+                        gins.stream().anyMatch(g -> (g.getPosition().y - src.get().getPosition().y) * trans == -2);
                 if (!there_were_gin_on_col) str += "引";
                 else if (there_were_gin_behind) str += "右引";
                 else str += "右";
@@ -287,7 +290,7 @@ public class Kifu {
         }
         // 成　または　不成
         // srcが盤上にあり、成駒できるとき
-        if (src.get().canPromote(dst.get().getPoint(), isAheadTurn()) && src.get().isOnBoard()) {
+        if (src.get().canPromote(dst.get().getPosition(), isAheadTurn()) && src.get().isOnBoard()) {
             if (dst.get().getTypeOfPiece() == src_type) {
                 str += "不成";
             } else {
@@ -300,7 +303,7 @@ public class Kifu {
     protected boolean isSamePosition(MovementOfPiece now, MovementOfPiece prev)
     {
         // dst が null になることはない
-        return prev != null && prev.getDst().get().getPoint().equals(now.getDst().get().getPoint());
+        return prev != null && prev.getDst().get().getPosition().equals(now.getDst().get().getPosition());
     }
     public boolean isAheadTurn() {
         return movedNum % 2 == 0;

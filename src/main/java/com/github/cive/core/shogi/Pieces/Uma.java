@@ -26,12 +26,12 @@ public class Uma extends Kaku{
     }
 
     @Override
-    public Set<Point> getRuleOfPiece(int player_type) {
+    public Set<Point> getRuleOfPiece(PlayerBase.PlayerType player_type) {
         // dammy
         Set<Point> set = new HashSet<>();
         PieceFactory factory = new PieceFactory();
-        Optional<PieceBase> kaku = factory.create(PieceBase.KAKU, this.getPoint());
-        Optional<PieceBase> gyoku = factory.create(PieceBase.GYOKU, this.getPoint());
+        Optional<PieceBase> kaku = factory.create(PieceBase.KAKU, this.getPosition());
+        Optional<PieceBase> gyoku = factory.create(PieceBase.GYOKU, this.getPosition());
         set.addAll(kaku.get().getRuleOfPiece(player_type));
         set.addAll(gyoku.get().getRuleOfPiece(player_type));
         return set;
@@ -41,13 +41,18 @@ public class Uma extends Kaku{
         return PieceBase.UMA;
     }
     @Override
-    public Set<Point> getCapablePutPoint(PlayerBase attacker, PlayerBase defender) {
+    public Set<Point> getCapablePutPosition(PlayerBase attacker, PlayerBase defender) {
         Set<Point> set = new HashSet<>();
-        set.addAll(getSetToNeedToAdd(attacker, defender, true, 1, this.getPoint()));
-        set.addAll(getSetToNeedToAdd(attacker, defender, false, 1, this.getPoint()));
-        set.addAll(getSetToNeedToAdd(attacker, defender, true, -1, this.getPoint()));
-        set.addAll(getSetToNeedToAdd(attacker, defender, false, -1, this.getPoint()));
-        set.addAll((new Gyoku(this.getPoint()).getCapablePutPoint(attacker, defender)));
+        set.addAll(getSetToNeedToAdd(attacker, defender, true, 1, this.getPosition()));
+        set.addAll(getSetToNeedToAdd(attacker, defender, false, 1, this.getPosition()));
+        set.addAll(getSetToNeedToAdd(attacker, defender, true, -1, this.getPosition()));
+        set.addAll(getSetToNeedToAdd(attacker, defender, false, -1, this.getPosition()));
+        set.addAll((new Gyoku(this.getPosition()).getCapablePutPosition(attacker, defender)));
         return set;
+    }
+
+    @Override
+    public Integer getBacksideType() {
+        return PieceBase.KAKU;
     }
 }

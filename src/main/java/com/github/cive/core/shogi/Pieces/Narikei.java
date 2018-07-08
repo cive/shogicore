@@ -1,5 +1,7 @@
 package com.github.cive.core.shogi.Pieces;
 
+import com.github.cive.core.shogi.Players.PlayerBase;
+
 import java.awt.*;
 import java.util.HashSet;
 import java.util.Optional;
@@ -28,15 +30,20 @@ public class Narikei extends PieceBase {
     }
 
     @Override
-    public Set<Point> getRuleOfPiece(int player_type) {
+    public Set<Point> getRuleOfPiece(PlayerBase.PlayerType player_type) {
         Set<Point> set = new HashSet<>();
         PieceFactory factory = new PieceFactory();
-        Optional<PieceBase> kin = factory.create(PieceBase.KIN, this.getPoint());
+        Optional<PieceBase> kin = factory.create(PieceBase.KIN, this.getPosition());
         set.addAll(kin.get().getRuleOfPiece(player_type));
         return set;
     }
     @Override
     public Integer getTypeOfPiece() {
         return PieceBase.NARIKEI;
+    }
+
+    @Override
+    public Integer getBacksideType() {
+        return PieceBase.KEIMA;
     }
 }

@@ -7,6 +7,7 @@ package com.github.cive.core.shogi;
 
 import com.github.cive.core.shogi.Exceptions.PlayerNotDefinedGyokuException;
 import com.github.cive.core.shogi.Pieces.PieceBase;
+import com.github.cive.core.shogi.Pieces.PieceFactory;
 import com.github.cive.core.shogi.Players.AheadPlayer;
 import com.github.cive.core.shogi.Players.BehindPlayer;
 import com.github.cive.core.shogi.Players.PlayerBase;
@@ -16,9 +17,12 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Pattern;
 
 //import jdk.internal.util.xml.impl.Pair;
+import static com.github.cive.core.shogi.Utils.LocationStringToPoint;
+import static com.github.cive.core.shogi.Utils.LocationStringToPosition;
 import static org.apache.commons.codec.binary.Hex.encodeHexString;
 
 public class GameBoard {
@@ -31,8 +35,8 @@ public class GameBoard {
         initGame();
         //printBoard();
     }
-    public GameBoard(int rule) {
-        initGame(rule);
+    public GameBoard(PlayerBase.GameRule ahead_rule, PlayerBase.GameRule behind_rule) {
+        initGame(ahead_rule, behind_rule);
         //printBoard();
     }
     public Boolean isAheadsTurn() {
@@ -45,9 +49,9 @@ public class GameBoard {
         kifu.setInitialPlayers(playerA, playerB);
         setTurn(true);
     }
-    private void initGame(int rule) {
-        playerA = new AheadPlayer(rule);
-        playerB = new BehindPlayer();
+    public void initGame(PlayerBase.GameRule ahead_rule, PlayerBase.GameRule behind_rule) {
+        playerA = new AheadPlayer(ahead_rule);
+        playerB = new BehindPlayer(behind_rule);
         kifu = new Kifu();
         kifu.setInitialPlayers(playerA, playerB);
         setTurn(true);
@@ -70,9 +74,9 @@ public class GameBoard {
     public Optional<PieceBase> getPieceOf(int x, int y) {
         return this.getPieceOf(new Point(x, y));
     }
-    public static boolean isInGrid(Point point) {
-        return point.x >= 0 && point.x < 9
-                && point.y >= 0 && point.y < 9;
+    public static boolean isInGrid(Point position) {
+        return position.x >= 1 && position.x <= 9
+                && position.y >= 1 && position.y <= 9;
     }
     private void setTurn(boolean aheadsTurn) {
         if(aheadsTurn) {
@@ -83,6 +87,7 @@ public class GameBoard {
             this.defender = playerA;
         }
     }
+
     public void nextTurn() {
         System.out.println("attOnBoa: " + attacker.getPiecesOnBoard());
         System.out.println("attInHan: " + attacker.getPiecesInHand());
@@ -103,35 +108,47 @@ public class GameBoard {
     public PlayerBase getDefender() {
         return defender;
     }
-    public Boolean canPlaceInside(Point src, Point dst) {
-        Optional<PieceBase> p = attacker.getPieceOnBoardAt(src);
+
+    /**
+     *
+     * @param src_position
+     * @param dst_position
+     * @return
+     */
+    public Boolean canPlaceInside(Point src_position, Point dst_position) {
+        Optional<PieceBase> p = attacker.getPieceOnBoardAt(src_position);
         if (!  p.isPresent()) return false;
-        Set<Point> s = p.get().getCapablePutPoint(attacker, defender);
-        return s.size() != 0 && s.contains(dst);
+        Set<Point> s = p.get().getCapablePutPosition(attacker, defender);
+        return s.size() != 0 && s.contains(dst_position);
     }
-    public Boolean isTherePieceAt(Point p) {
-        return attacker.getPieceTypeOnBoardAt(p).orElse(0) + defender.getPieceTypeOnBoardAt(p).orElse(0) > 0;
+
+    /**
+     *
+     * @param position
+     * @return
+     */
+    public Boolean isTherePieceAt(Point position) {
+        return attacker.getPieceTypeOnBoardAt(position).orElse(0) + defender.getPieceTypeOnBoardAt(position).orElse(0) > 0;
     }
 
     /**
      * 持ち駒を置く
      * @param piece このオブジェクトは削除されない
-     * @param dst 持ち駒を置く位置
+     * @param dst_position 持ち駒を置く位置
      * @param opt 棋譜に登録するか？ undo, redo で盤面を復元する際は必要ないので false を使う
      */
-    private void placePieceInHand(PieceBase piece, Point dst, Boolean opt){
+    private void placePieceInHand(PieceBase piece, Point dst_position, Boolean opt){
         // 持ち駒を置けるなら置いて，交代
-        if(wouldMoveNextLater(piece,dst) && !selected_will_be_niFu(piece, dst.x) && !isTherePieceAt(dst)){
+        if(wouldMoveNextLater(piece, dst_position) && !selected_will_be_niFu(piece, dst_position.x) && !isTherePieceAt(dst_position)){
 
             // 棋譜の登録
             if (opt) {
                 Optional<PieceBase> src_piece = Optional.empty();
-                Optional<PieceBase> dst_piece = Optional.of(piece);
-                dst_piece.get().setPoint(dst);
+                Optional<PieceBase> dst_piece = PieceFactory.create(piece.getTypeOfPiece(), dst_position);
                 // piece オブジェクト自体は削除しないで addPiecesOnBoard で置く
                 attacker.reducePieceInHandThatIs(piece);
                 // 持ち駒を置く
-                piece.setPoint(dst);
+                piece.setPosition(dst_position);
                 attacker.addPiecesOnBoard(piece);
                 kifu.update(new MovementOfPiece(src_piece, dst_piece, getHash()), attacker, defender);
             }
@@ -139,7 +156,7 @@ public class GameBoard {
             {
                 attacker.reducePieceInHandThatIs(piece);
                 // 持ち駒を置く
-                piece.setPoint(dst);
+                piece.setPosition(dst_position);
                 attacker.addPiecesOnBoard(piece);
             }
             this.nextTurn();
@@ -153,9 +170,8 @@ public class GameBoard {
     private void replacePiece(Point src, Point dst, Boolean opt) {
         // 棋譜の登録
         if (opt) {
-            Optional<PieceBase> src_for_kifu = attacker.getPieceOnBoardAt(src);
-            Optional<PieceBase> dst_for_kifu = attacker.getPieceOnBoardAt(src);
-            dst_for_kifu.get().setPoint(dst);
+            Optional<PieceBase> src_for_kifu = PieceFactory.create(attacker.getPieceOnBoardAt(src).get().getTypeOfPiece(), src);
+            Optional<PieceBase> dst_for_kifu = PieceFactory.create(src_for_kifu.get().getTypeOfPiece(), dst); // gui のポイントを入れなくてはならない
             replace(src, dst, attacker, defender, false);
             kifu.update(new MovementOfPiece(src_for_kifu, dst_for_kifu, getHash()), attacker, defender);
         }
@@ -180,12 +196,12 @@ public class GameBoard {
     private void replacePieceWithPromote(Point src, Point dst, Boolean opt) {
             // 棋譜の登録
             if (opt) {
-                Optional<PieceBase> src_for_kifu = attacker.getPieceOnBoardAt(src);
-                Optional<PieceBase> dst_for_kifu = attacker.getPieceOnBoardAt(src);
-                dst_for_kifu.get().setPoint(dst);
+                Optional<PieceBase> src_for_kifu = PieceFactory.create(attacker.getPieceOnBoardAt(src).get().getTypeOfPiece(), src);
+                Optional<PieceBase> dst_for_kifu = PieceFactory.createPromoted(src_for_kifu.get().getTypeOfPiece(), dst);
                 // 駒の移動
                 replace(src, dst, attacker, defender, true);
-                kifu.update(new MovementOfPiece(src_for_kifu, dst_for_kifu.get().getPromotePiece(), getHash()), attacker, defender);
+                // 駒の移動をしてからハッシュ値を取得する必要がある
+                kifu.update(new MovementOfPiece(src_for_kifu, dst_for_kifu, getHash()), attacker, defender);
             }
             else
             {
@@ -219,26 +235,34 @@ public class GameBoard {
         for (int i = 0; i < num; i++) {
             MovementOfPiece bs = list.get(i);
             if (!bs.getSrc().get().isOnBoard()) {
-                placePieceInHand(bs.getDst().get(), bs.getDst().get().getPoint(), false);
+                placePieceInHand(bs.getDst().get(), bs.getDst().get().getPosition(), false);
             } else if (!Objects.equals(bs.getDst().get().getTypeOfPiece(), bs.getSrc().get().getTypeOfPiece())) {
-               replacePieceWithPromote(bs.getSrc().get().getPoint(), bs.getDst().get().getPoint(), false);
+               replacePieceWithPromote(bs.getSrc().get().getPosition(), bs.getDst().get().getPosition(), false);
             } else {
-                replacePiece(bs.getSrc().get().getPoint(), bs.getDst().get().getPoint(), false);
+                replacePiece(bs.getSrc().get().getPosition(), bs.getDst().get().getPosition(), false);
             }
         }
         kifu.undo(list.size() - num);
     }
 
-    private void replace(Point src, Point dst, PlayerBase attacker, PlayerBase defender, Boolean willPromote)
+    /**
+     * replace internal func
+     * @param src_position
+     * @param dst_position
+     * @param attacker
+     * @param defender
+     * @param willPromote
+     */
+    private void replace(Point src_position, Point dst_position, PlayerBase attacker, PlayerBase defender, Boolean willPromote)
     {
         // オブジェクトを削除して再配置する
-        Optional<PieceBase> src_piece = attacker.getPieceOnBoardAt(src);
-        attacker.reducePieceOnBoardAt(src);
-        src_piece.get().setPoint(dst);
-        if(defender.getPieceTypeOnBoardAt(dst).isPresent()) {
-            Optional<PieceBase> dst_piece = defender.getPieceOnBoardAt(dst);
-            defender.reducePieceOnBoardAt(dst);
-            dst_piece.get().setPoint(new Point(-1,-1));
+        Optional<PieceBase> src_piece = attacker.getPieceOnBoardAt(src_position);
+        attacker.reducePieceOnBoardAt(src_position);
+        src_piece.get().setPosition(dst_position);
+        if(defender.getPieceTypeOnBoardAt(dst_position).isPresent()) {
+            Optional<PieceBase> dst_piece = defender.getPieceOnBoardAt(dst_position);
+            defender.reducePieceOnBoardAt(dst_position);
+            dst_piece.get().setPosition(new Point(-1,-1));
             if(dst_piece.get().getTypeOfPiece() > PieceBase.GYOKU)
                 attacker.addPiecesInHand(dst_piece.get().getDemotePiece().get());
             else
@@ -251,11 +275,11 @@ public class GameBoard {
     }
 
     // 与えられた位置が含まれる列に，既に歩があればtrue
-    public boolean selected_will_be_niFu(PieceBase selected_pieceBase, int x){
+    public boolean selected_will_be_niFu(final PieceBase selected_piece, int x){
         boolean ret = false;
         // 置こうとしている駒が歩であるか
-        if(selected_pieceBase.getTypeOfPiece() == PieceBase.FU){
-            for(int y = 0; y < 9; y++){
+        if(selected_piece.getTypeOfPiece() == PieceBase.FU){
+            for(int y = 1; y <= 9; y++){
                 Optional<PieceBase> piece = attacker.getPieceOnBoardAt(new Point(x, y));
                 // 自分の駒でかつそれが歩であれば
                 if(piece.isPresent() && piece.get().getTypeOfPiece() == PieceBase.FU){
@@ -267,40 +291,35 @@ public class GameBoard {
         return ret;
     }
     // 与えられた位置が動かせる位置ならtrue
-    public Boolean wouldMoveNextLater(PieceBase selected_pieceBase, Point dst) {
+    public Boolean wouldMoveNextLater(final PieceBase selected_piece, Point dst_position) {
+        // selected_piece が deep copy でないために、一度コピーしてから setPosition している
         PieceBase p = null;
         try {
-            p = selected_pieceBase.clone();
+            p = selected_piece.clone();
         } catch (CloneNotSupportedException e) {
             e.printStackTrace();
         }
         if(p == null) return false;
-        p.setPoint(dst);
+        p.setPosition(dst_position);
         return p.canMoveLater(attacker);
     }
 
-    // 場所を表わす文字列を座標値に変換（「5二」を表わす「52」は(4, 1)に変換）
-    private Point LocationStringToPoint(String str) {
-        int x = Integer.parseInt(str.substring(0, 1));
-        int y = Integer.parseInt(str.substring(1, 2));
-        return new Point(9 - x, y - 1);
-    }
 
     // 文字列で駒を移動する
     public boolean MoveByString(String str) {
         // 文字列のパターンで場合分け
         if (Pattern.compile("[1-9]{4}").matcher(str).matches()) {
             // 移動
-            Point src = LocationStringToPoint(str.substring(0, 2));
-            Point dst = LocationStringToPoint(str.substring(2, 4));
+            Point src = LocationStringToPosition(str.substring(0, 2));
+            Point dst = LocationStringToPosition(str.substring(2, 4));
             if (canPlaceInside(src, dst)) {
                 replacePiece(src, dst);
                 return true;
             }
         }else if (Pattern.compile("[1-9]{4}\\+").matcher(str).matches()) {
             // 移動して成る
-            Point src = LocationStringToPoint(str.substring(0, 2));
-            Point dst = LocationStringToPoint(str.substring(2, 4));
+            Point src = LocationStringToPosition(str.substring(0, 2));
+            Point dst = LocationStringToPosition(str.substring(2, 4));
             if (canPlaceInside(src, dst)) {
                 replacePieceWithPromote(src, dst);
                 return true;
@@ -327,6 +346,45 @@ public class GameBoard {
             }
         }
         return false;
+    }
+
+    public boolean MoveByStringForCsaV21(String str)
+    {
+        AtomicBoolean ret = new AtomicBoolean(false);
+        // 文字列のパターンで場合分け
+        if (Pattern.compile("[1-9]{4}.*").matcher(str).matches()) {
+            // 移動
+            Point src = LocationStringToPosition(str.substring(0, 2));
+            Point dst = LocationStringToPosition(str.substring(2, 4));
+            String piece_type_str = str.substring(4, 6);
+            int piece_type = PieceBase.getTypeFromString(piece_type_str);
+            Optional<PieceBase> src_piece = getPieceOf(src);
+            if (src_piece.isPresent() && canPlaceInside(src, dst)) {
+                if (src_piece.get().getTypeOfPiece() == piece_type) {
+                    replacePiece(src, dst);
+                    ret.set(true);
+                }
+                src_piece.get().getPromotePiece().ifPresent(piece -> {
+                    if (piece.getTypeOfPiece() == piece_type)
+                    {
+                        replacePieceWithPromote(src, dst);
+                        ret.set(true);
+                    }
+                });
+            }
+        }
+        else if (Pattern.compile("00[1-9]{2}.*").matcher(str).matches()) {
+            // 持ち駒を指す
+            Point dst = LocationStringToPosition(str.substring(2, 4));
+            String piece_type_str = str.substring(4, 6);
+            int piece_type = PieceBase.getTypeFromString(piece_type_str);
+            Optional<PieceBase> src = attacker.getPiecesInHand().stream().filter(x -> x.getTypeOfPiece() == piece_type).findFirst();
+            src.ifPresent(pieceBase -> {
+                placePieceInHand(src.get(), dst);
+                ret.set(true);
+            });
+        }
+        return ret.get();
     }
 
     public void printBoard() {
@@ -377,14 +435,15 @@ public class GameBoard {
         for(int y = 0; y < 9; y++) {
             ret.append("P").append(y + 1);
             for(int x = 0; x < 9; x++) {
+                Point position = new Point(9-x, y+1);
                 PlayerBase player;
-                if (attacker.getPieceTypeOnBoardAt(new Point(x, y)).isPresent()) player = attacker;
+                if (attacker.getPieceTypeOnBoardAt(position).isPresent()) player = attacker;
                 else player = defender;
-                Boolean existPiece = player.getPieceTypeOnBoardAt(new Point(x,y)).isPresent();
+                Boolean existPiece = player.getPieceTypeOnBoardAt(position).isPresent();
                 if (player instanceof AheadPlayer && existPiece) ret.append("+");
                 else if (player instanceof BehindPlayer && existPiece) ret.append("-");
                 if (!existPiece) ret.append(" * ");
-                else ret.append(player.getPieceOnBoardAt(new Point(x, y)).get().getName(true));
+                else ret.append(player.getPieceOnBoardAt(position).get().getName(true));
             }
             if (y != 8) ret.append("\n");
         }
@@ -401,9 +460,9 @@ public class GameBoard {
         Point ptGyoku = attacker.getPiecesOnBoard(PieceBase.GYOKU)
                 .findFirst()
                 .orElseThrow(PlayerNotDefinedGyokuException::new)
-                .getPoint();
+                .getPosition();
         Set<Point> set = new HashSet<>();
-        defender.getPiecesOnBoard().stream().forEach(x -> set.addAll(x.getCapablePutPoint(defender,attacker)));
+        defender.getPiecesOnBoard().stream().forEach(x -> set.addAll(x.getCapablePutPosition(defender,attacker)));
         return set.stream().anyMatch(x -> x.equals(ptGyoku));
     }
 
@@ -438,8 +497,8 @@ public class GameBoard {
             ptGyoku = att.getPiecesOnBoard(PieceBase.GYOKU)
                     .findAny()
                     .orElseThrow(PlayerNotDefinedGyokuException::new)
-                    .getPoint();
-            points_of_capable_moving_of_gyoku.addAll(att.getPieceOnBoardAt(ptGyoku).get().getCapablePutPoint(att,def));
+                    .getPosition();
+            points_of_capable_moving_of_gyoku.addAll(att.getPieceOnBoardAt(ptGyoku).get().getCapablePutPosition(att,def));
         } else {
             System.err.println("読み込みエラー");
             throw new NullPointerException();
@@ -484,11 +543,11 @@ public class GameBoard {
             }
         }
         // もし、玉の周りの駒を移動させることで王手を防げるのなら詰みではない
-        for (PieceBase pieceBase : att.getPiecesOnBoard()) {
-            Point src = pieceBase.getPoint();
-            Set<Point> points = new HashSet<>();
-            points.addAll(pieceBase.getCapablePutPoint(att, def));
-            for (Point dest : points) {
+        for (PieceBase piece : att.getPiecesOnBoard()) {
+            Point src = piece.getPosition();
+            Set<Point> positions = new HashSet<>();
+            positions.addAll(piece.getCapablePutPosition(att, def));
+            for (Point dest : positions) {
                 PlayerBase a = null, d = null;
                 try {
                     a = att.clone();
@@ -524,5 +583,44 @@ public class GameBoard {
             e.printStackTrace();
         }
         return false;
+    }
+
+    public long countPieces(int type)
+    {
+        long count = this.attacker.getPiecesOnBoard().stream().filter(piece -> piece.getTypeOfPiece() == type || piece.getBacksideType() == type).count();
+        count += this.attacker.getPiecesOnBoard().stream().filter(piece -> piece.getTypeOfPiece() == type || piece.getBacksideType() == type).count();
+        count += this.defender.getPiecesOnBoard().stream().filter(piece -> piece.getTypeOfPiece() == type || piece.getBacksideType() == type).count();
+        count += this.defender.getPiecesOnBoard().stream().filter(piece -> piece.getTypeOfPiece() == type || piece.getBacksideType() == type).count();
+        return count;
+    }
+
+    public boolean canPlaceAtInit(int type)
+    {
+        return numberOfPiece(type) > countPieces(type);
+    }
+
+    public Integer numberOfPiece(int type)
+    {
+        switch (type) {
+            case PieceBase.FU:
+            case PieceBase.TOKIN:
+                return 18;
+            case PieceBase.KYOSHA:
+            case PieceBase.NARIKYO:
+            case PieceBase.KEIMA:
+            case PieceBase.NARIKEI:
+            case PieceBase.GIN:
+            case PieceBase.NARIGIN:
+            case PieceBase.KIN:
+                return 4;
+            case PieceBase.KAKU:
+            case PieceBase.UMA:
+            case PieceBase.HISHA:
+            case PieceBase.RYU:
+            case PieceBase.GYOKU:
+                return 2;
+            default:
+                return 0;
+        }
     }
 }

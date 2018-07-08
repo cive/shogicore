@@ -27,10 +27,10 @@ public class Kyosha extends PieceBase {
     }
 
     @Override
-    public Set<Point> getRuleOfPiece(int player_type) {
+    public Set<Point> getRuleOfPiece(PlayerBase.PlayerType player_type) {
         // dammy
         Set<Point> set = new HashSet<>();
-        if(player_type == PlayerBase.AHEAD) {
+        if(player_type == PlayerBase.PlayerType.Ahead) {
             for(int i = 1; i < 10; i++) {
                 set.add(new Point(0, -i));
             }
@@ -42,18 +42,18 @@ public class Kyosha extends PieceBase {
         return set;
     }
     @Override
-    public Set<Point> getCapablePutPoint(PlayerBase attacker, PlayerBase defender) {
-        int player_type = attacker instanceof AheadPlayer ? PlayerBase.AHEAD : PlayerBase.BEHIND;
+    public Set<Point> getCapablePutPosition(PlayerBase attacker, PlayerBase defender) {
+        PlayerBase.PlayerType player_type = attacker instanceof AheadPlayer ? PlayerBase.PlayerType.Ahead : PlayerBase.PlayerType.Behind;
         Set<Point> set = new HashSet<>();
-        int ini = player_type == PlayerBase.AHEAD ? -1 : 1;
+        int ini = player_type == PlayerBase.PlayerType.Ahead ? -1 : 1;
         for(int i = ini;  Math.abs(i) < 9;i += ini) {
-            Point target = new Point(this.getPoint().x, this.getPoint().y+i);
-            if(GameBoard.isInGrid(target)) {
-                if (attacker.getPieceTypeOnBoardAt(target).isPresent()) {
+            Point target_position = new Point(this.getPosition().x, this.getPosition().y+i);
+            if(GameBoard.isInGrid(target_position)) {
+                if (attacker.getPieceTypeOnBoardAt(target_position).isPresent()) {
                     break;
                 }
-                set.add(target);
-                if (defender.getPieceTypeOnBoardAt(target).isPresent()) {
+                set.add(target_position);
+                if (defender.getPieceTypeOnBoardAt(target_position).isPresent()) {
                     break;
                 }
             }
@@ -63,5 +63,10 @@ public class Kyosha extends PieceBase {
     @Override
     public Integer getTypeOfPiece() {
         return PieceBase.KYOSHA;
+    }
+
+    @Override
+    public Integer getBacksideType() {
+        return PieceBase.NARIKYO;
     }
 }

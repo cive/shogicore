@@ -25,9 +25,9 @@ public class Gin extends PieceBase {
     }
 
     @Override
-    public Set<Point> getRuleOfPiece(int player_type) {
+    public Set<Point> getRuleOfPiece(PlayerBase.PlayerType player_type) {
         Set<Point> set = new HashSet<>();
-        if(player_type == PlayerBase.AHEAD) {
+        if(player_type == PlayerBase.PlayerType.Ahead) {
             set.add(new Point(-1, -1));
             set.add(new Point(0, -1));
             set.add(new Point(1, -1));
@@ -46,5 +46,10 @@ public class Gin extends PieceBase {
     @Override
     public Integer getTypeOfPiece() {
         return PieceBase.GIN;
+    }
+    @Override
+    public Integer getBacksideType()
+    {
+        return PieceBase.NARIGIN;
     }
 }

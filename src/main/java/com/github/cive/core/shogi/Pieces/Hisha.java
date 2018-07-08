@@ -26,7 +26,7 @@ public class Hisha extends PieceBase {
     }
 
     @Override
-    public Set<Point> getRuleOfPiece(int player_type) {
+    public Set<Point> getRuleOfPiece(PlayerBase.PlayerType player_type) {
         //dammy
         Set<Point> set = new HashSet<>();
         for(int i = -8; i < 9; i++) {
@@ -38,24 +38,24 @@ public class Hisha extends PieceBase {
         return set;
     }
     @Override
-    public Set<Point> getCapablePutPoint(PlayerBase attacker, PlayerBase defender){
+    public Set<Point> getCapablePutPosition(PlayerBase attacker, PlayerBase defender){
         Set<Point> set = new HashSet<>();
-        set.addAll(getSetToNeedToAdd(attacker, defender, true, 1, this.getPoint()));
-        set.addAll(getSetToNeedToAdd(attacker, defender, false, 1, this.getPoint()));
-        set.addAll(getSetToNeedToAdd(attacker, defender, true, -1, this.getPoint()));
-        set.addAll(getSetToNeedToAdd(attacker, defender, false, -1, this.getPoint()));
+        set.addAll(getSetToNeedToAdd(attacker, defender, true, 1, this.getPosition()));
+        set.addAll(getSetToNeedToAdd(attacker, defender, false, 1, this.getPosition()));
+        set.addAll(getSetToNeedToAdd(attacker, defender, true, -1, this.getPosition()));
+        set.addAll(getSetToNeedToAdd(attacker, defender, false, -1, this.getPosition()));
         return set;
     }
-    public Set<Point> getSetToNeedToAdd(PlayerBase attacker, PlayerBase defender, boolean axis, int ini, Point selected) {
+    public Set<Point> getSetToNeedToAdd(PlayerBase attacker, PlayerBase defender, boolean axis, int ini, Point selected_position) {
         Set<Point> set_for_add = new HashSet<>();
         for(int i = ini; Math.abs(i) < 9; i += ini) {
-            Point target = new Point(selected.x+(axis?i:0), selected.y+(axis?0:i));
-            if(GameBoard.isInGrid(target)) {
-                if (attacker.getPieceTypeOnBoardAt(target).isPresent()) {
+            Point target_position = new Point(selected_position.x+(axis?i:0), selected_position.y+(axis?0:i));
+            if(GameBoard.isInGrid(target_position)) {
+                if (attacker.getPieceTypeOnBoardAt(target_position).isPresent()) {
                     break;
                 }
-                set_for_add.add(target);
-                if (defender.getPieceTypeOnBoardAt(target).isPresent()) {
+                set_for_add.add(target_position);
+                if (defender.getPieceTypeOnBoardAt(target_position).isPresent()) {
                     break;
                 }
             }
@@ -66,5 +66,10 @@ public class Hisha extends PieceBase {
     @Override
     public Integer getTypeOfPiece() {
         return PieceBase.HISHA;
+    }
+    @Override
+    public Integer getBacksideType()
+    {
+        return PieceBase.RYU;
     }
 }

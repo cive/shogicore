@@ -1,6 +1,7 @@
 package com.github.cive.core.shogi.Players;
 
 import com.github.cive.core.shogi.Pieces.PieceBase;
+import com.github.cive.core.shogi.Pieces.PieceFactory;
 
 import java.awt.*;
 import java.util.*;
@@ -12,14 +13,31 @@ import java.util.stream.Stream;
  * have pieces on board and in hand.
  */
 public abstract class PlayerBase implements Cloneable{
-    public final static int AHEAD = 0;
-    public final static int BEHIND = 1;
-    static final int FU_OCHI = 0;
-    static final int HISHA_KAKU_OCHI = 1;
+    public enum PlayerType
+    {
+        Ahead,
+        Behind
+    }
+    public enum GameRule
+    {
+        Normal,
+        NoneFu,
+        NoneHishaKaku
+    }
     public PlayerBase clone() throws CloneNotSupportedException {
         PlayerBase c = (PlayerBase)super.clone();
-        c.piecesInHand = new ArrayList<>(piecesInHand);
-        c.piecesOnBoard = new ArrayList<>(piecesOnBoard);
+        c.piecesInHand = null;
+        c.piecesInHand = new ArrayList<>();
+        for (PieceBase piece : piecesInHand)
+        {
+            c.piecesInHand.add(PieceFactory.create(piece.getTypeOfPiece(), piece.getPosition()).get());
+        }
+        c.piecesOnBoard = null;
+        c.piecesOnBoard = new ArrayList<>();
+        for (PieceBase piece : piecesOnBoard)
+        {
+            c.piecesOnBoard.add(PieceFactory.create(piece.getTypeOfPiece(), piece.getPosition()).get());
+        }
         return c;
     }
     private ArrayList<PieceBase> piecesOnBoard = new ArrayList<>();
@@ -42,16 +60,16 @@ public abstract class PlayerBase implements Cloneable{
         return piecesOnBoard.stream().filter(x -> x.getTypeOfPiece() == type);
     }
     // O(n)
-    public Optional<PieceBase> getPieceOnBoardAt(Point point_for_gui) {
+    public Optional<PieceBase> getPieceOnBoardAt(Point position) {
         for (PieceBase piece : piecesOnBoard) {
-            if (piece.getPoint().equals(point_for_gui)) return Optional.of(piece);
+            if (piece.getPosition().equals(position)) return Optional.of(piece);
         }
         return Optional.empty();
     }
     // O(n)
-    public Optional<Integer> getPieceTypeOnBoardAt(Point point_for_gui) {
+    public Optional<Integer> getPieceTypeOnBoardAt(Point position) {
         for (PieceBase piece : piecesOnBoard) {
-            if (piece.getPoint().equals(point_for_gui)) return Optional.of(piece.getTypeOfPiece());
+            if (piece.getPosition().equals(position)) return Optional.of(piece.getTypeOfPiece());
         }
         return Optional.empty();
     }
@@ -66,9 +84,9 @@ public abstract class PlayerBase implements Cloneable{
         return false;
     }
     // O(n)
-    public Boolean reducePieceOnBoardAt(Point point_for_gui) {
+    public Boolean reducePieceOnBoardAt(Point position) {
         for (PieceBase piece : piecesOnBoard) {
-            if (piece.getPoint().equals(point_for_gui)){
+            if (piece.getPosition().equals(position)){
                 piecesOnBoard.remove(piece);
                 return true;
             }
@@ -82,26 +100,33 @@ public abstract class PlayerBase implements Cloneable{
         }
         return false;
     }
-    protected void setInitial(int rule) {
+    protected void setInitial(GameRule rule) {
         piecesOnBoard.clear();
         piecesInHand.clear();
-        if(rule == FU_OCHI) {
-            setKaku();
-            setHisha();
-            setGin();
-            setKin();
-            setKeima();
-            setKyosha();
-            setGyoku();
-        } else if (rule == HISHA_KAKU_OCHI) {
-            setFu();
-            setGin();
-            setKin();
-            setKeima();
-            setKyosha();
-            setGyoku();
-        } else {
-            setDefault();
+        switch (rule) {
+            case Normal:
+                setDefault();
+                break;
+            case NoneFu:
+                setKaku();
+                setHisha();
+                setGin();
+                setKin();
+                setKeima();
+                setKyosha();
+                setGyoku();
+                break;
+            case NoneHishaKaku:
+                setFu();
+                setGin();
+                setKin();
+                setKeima();
+                setKyosha();
+                setGyoku();
+                break;
+            default:
+                setDefault();
+                break;
         }
     }
     protected void setDefault() {
@@ -120,6 +145,13 @@ public abstract class PlayerBase implements Cloneable{
         piecesInHand.addAll(player.getPiecesInHand());
         piecesOnBoard.addAll(player.getPiecesOnBoard());
     }
+
+    protected Integer countAll() {
+        Integer size = piecesInHand.size();
+        size += piecesOnBoard.size();
+        return size;
+    }
+
     abstract protected void setFu();
     abstract protected void setKyosha();
     abstract protected void setKeima();

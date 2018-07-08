@@ -20,6 +20,10 @@ public class PieceFactory implements Constant {
             case GYOKU: return Optional.of(new Gyoku(place));
             case UMA: return Optional.of(new Uma(place));
             case RYU: return Optional.of(new Ryu(place));
+            case TOKIN: return Optional.of(new Tokin(place));
+            case NARIKYO: return Optional.of(new Narikyo(place));
+            case NARIKEI: return Optional.of(new Narikei(place));
+            case NARIGIN: return Optional.of(new Narigin(place));
             default: return Optional.empty();
         }
     }
