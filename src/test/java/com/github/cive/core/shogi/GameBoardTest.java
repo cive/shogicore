@@ -28,6 +28,7 @@ public class GameBoardTest {
                 "P8 * +KA *  *  *  *  * +HI * \n" +
                 "P9+KY+KE+GI+KI+OU+KI+GI+KE+KY";
         assertEquals(gb.getBoardSurface(), str);
+        assertTrue(false);
     }
 
     @Test
