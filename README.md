@@ -3,6 +3,8 @@ Shogi ( 将棋 ): Japanese Chess core library
 
 ### This library will use with maven repository. 
 
+* TestTest
+
 * Now, I can't auto deploy...
   + Please look the version from release tab.
 
